@@ -1,0 +1,20 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html><head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.7 [fr] (Win98; I) [Netscape]">
+   <title>Quant</title>
+</head>
+
+<body text="#000000" bgcolor="#B7D0C1" link="#0000EE" vlink="#551A8B" alink="#FF0000">
+<center><h1><font color="#CCFFFF"></font>8trd157 - lab6<br><br>Quant</h1>
+<br><br><br><br>
+<p><h4><center>Execution of the following command :
+ <i>SELECT count(*), sum(total) FROM purchase_order, pa_agent, responsible, pot_supplier, detail where pot_supplier.product_id = detail.product_id and detail.po_number = purchase_order.po_number and pot_supplier.part_id = responsible.part_id and responsible.emp_num = $pa_id</i></h4>
+<br><h3>Enter a pa number (complete or partial  from 100-102)</h3>
+
+<form action="request.php" method="post">
+<input type=text name="pa_id" size=3>
+<input type="submit" value="Submit"></center>
+</form>
+</body></html>
+

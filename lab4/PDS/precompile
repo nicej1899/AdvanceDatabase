@@ -1,0 +1,1 @@
+proc INAME=pds.pc CODE=ANSI_C SQLCHECK=semantics mode=oracle userid=ora00026/GcuFmU char_map=charz

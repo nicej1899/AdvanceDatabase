@@ -1,0 +1,168 @@
+/*
+*       Author:         Paul Girard Ph.D., UQAC
+*       Date:           May 2019
+*       Objective:      Program using Pro*C/C++ and gcc to show how to use 
+*                       different type of PL/SQL blocks & SQL in a C PGM
+*
+*       Step 1: Precompilation with Pro*C/C++
+* proc INAME=lab4base.pc CODE=ANSI_C SQLCHECK=semantics MODE=oracle USERID=user/password CHAR_MAP=charz
+*
+*       Step 2: Compilation with gcc    
+* gcc lab4base.c -o lab4base -include /$ORACLE_HOME/precomp/public/sqlca.h -lclntsh -B$ORACLE_HOME/lib/ -B$ORACLE_HOME/lib
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+ 
+void sql_error();
+void do_connect();
+void modresp();
+void quant();
+int print_menu();
+
+int main()
+{ 
+        EXEC SQL WHENEVER SQLERROR do sql_error("Error at connect"); 
+        
+        do_connect();           /* connection to Oracle instance */
+
+/*      Display the program menu
+*       and execution of the transaction 
+*/
+        
+        while (1)       /* infinite loop */
+        {
+         switch (print_menu())
+         {
+          case 1: modresp();
+                  break;
+          case 2: quant();
+                  break;
+          case 3: print_menu();
+                  break;
+                 case 4: puts("\nAu revoir Sayonara Bye bye, Ni Hao"); 
+                exit(0);
+          default: puts("\n =====> Enter a digit from the menu please ?");
+                   break;
+         }
+        }
+        
+        EXEC SQL COMMIT WORK RELEASE;           /* lib�re les verroux et d�connecte */
+                                        
+        exit(0); 
+}                       /* end of main() program */
+
+/* ******************************************************************************************
+*       Function to display the original error Oracle message 
+*  ******************************************************************************************
+*/
+
+void sql_error(char *msg)
+{
+        char ora_msg[512];                      /* buffer for Oracle error message */
+        int buf_len, msg_len;
+        
+        EXEC SQL WHENEVER SQLERROR continue;    /* Prevent an infinite loop */
+        
+        printf("\n%s\n",msg);                   /* print the local program message */
+        buf_len=sizeof(ora_msg);
+        
+        sqlglm(ora_msg,&buf_len, &msg_len);     /* read the Oracle error message */
+        printf("\n%.*s\n",msg_len, ora_msg);    /* print this message */
+        
+        EXEC SQL ROLLBACK RELEASE;              /* free locks */
+        exit(1);
+}               /*      fin de sql_error */
+
+/* ******************************************************************************************
+*       Function to do a connection to an Oracle user schema
+*  ******************************************************************************************
+*/
+
+void do_connect()
+{
+   char *uid="ora00026/GcuFmU";
+
+        EXEC SQL CONNECT :uid; 
+        printf("Connected to Oracle schema\n");
+}
+
+void modresp()
+{
+    int pa_id, pa_id2, part_id, found = 1;
+    printf("Enter a part id and two pa id:");
+    scanf("%d%d%d", &part_id, &pa_id, &pa_id2);
+    if(pa_id <=0 || pa_id2 <= 0 || part_id <=0)
+    {
+        printf("End of this transaction\n");
+        EXEC SQL COMMIT; 
+        return;
+    }
+    EXEC SQL EXECUTE
+    BEGIN
+        update ora00097.responsible set emp_num = :pa_id2
+        where part_id = :part_id and emp_num = :pa_id;
+        if SQL%NOTFOUND then :found := 0;
+        end if;
+        commit;
+    END;
+    END-EXEC;
+    printf("---------------\n");
+    if(found)
+    {
+        printf("Modification done\n"); 
+    }else
+    {
+        printf("Record not found \n");
+    }
+    EXEC SQL COMMIT; 
+}
+
+void quant()
+{
+    int pa_id, count = 0;
+    float total_value = 0;
+    printf("Enter a pa id:");
+    scanf("%d", &pa_id);
+    if(pa_id <= 0)
+    {
+        printf("End of this transaction\n");
+        EXEC SQL COMMIT; 
+        return;
+    }
+
+    EXEC SQL EXECUTE
+    BEGIN
+        select count(*), sum(total) INTO :count, :total_value
+        from ora00097.purchase_pds, ora00097.pa_task
+        where purchase_pds.po_number = pa_task.po_number
+            and pa_task.emp_num = :pa_id
+            and purchase_pds.status = 'done';
+    END;
+    END-EXEC;
+    
+    printf("---------------------\n");
+    printf("count       : %d\n", count);
+    printf("total_value : %.2f\n", total_value);
+    printf("End of this transaction\n");
+    EXEC SQL COMMIT; 
+}
+
+/* ************************************************************
+*       Function print the menu and choose the transaction
+*  ************************************************************
+*/
+
+int print_menu()
+{
+   int choice;                          /* id of menu */
+        printf("\n\t Choose a transaction by entering a number \n");
+        printf("\t *****************************************\n");
+        printf("\t (1) MODRESP\n");
+        printf("\t (2) QUANT\n");
+        printf("\t (3) DISPLAY MENU\n");
+        printf("\t (4) QUIT\n");
+        printf("Enter your choice ? "); 
+        scanf("%d",&choice);            /* read the choice */
+        return choice;
+}

@@ -1,0 +1,29 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html><head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.7 [fr] (Win98; I) [Netscape]">
+   <title>lab6</title>
+</head>
+
+<body text="#000000" bgcolor="#B7D0C1" link="#0000EE" vlink="#551A8B" alink="#FF0000">
+<center><h1><font color="#CCFFFF"></font>8trd157-lab6</h1></center>
+<center><i>(Paul Girard, Ph.D.)</i>
+<h1>Purchasing Agent Module<br><br></h1></center>
+<center><p>Access to the Oracle database <i>cndb</i> on the server dimensxcn1.uqac.ca
+ by an  html page, an Oracle connection <br> and a PHP program with Apache<br>
+<br><br><br><h3>Select a transaction</h3>
+
+<form name="form1">
+	<select name="liste1" size="1">
+   		<option value="lispart.html">lispart</option>
+   		<option value="crepart.html">*crepart</option>
+   		<option value="cre_po.html">*cre_po</option>
+   		<option value="cresupp.html">*cresupp</option>
+   		<option value="creprod.html">*creprod</option>  		
+ 	</select>
+ 	<input type="button" value="OK" onClick="if (form1.liste1.selectedIndex != 5) 
+ 						location = form1.liste1.options[form1.liste1.selectedIndex].value;
+ 						else alert('Pleaae make a choice.')">
+</form>
+
+</body></html>

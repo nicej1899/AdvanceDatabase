@@ -1,0 +1,1 @@
+gcc tech.c -o tech -include /$ORACLE_HOME/precomp/public/sqlca.h -lclntsh -B$ORACLE_HOME/lib/ -B$ORACLE_HOME/lib

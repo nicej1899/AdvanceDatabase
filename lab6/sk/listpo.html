@@ -1,0 +1,20 @@
+<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
+<html><head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+   <meta name="GENERATOR" content="Mozilla/4.7 [fr] (Win98; I) [Netscape]">
+   <title>List purchase order</title>
+</head>
+
+<body text="#000000" bgcolor="#B7D0C1" link="#0000EE" vlink="#551A8B" alink="#FF0000">
+<center><h1><font color="#CCFFFF"></font>8trd157 - lab6<br><br>List purchase order</h1>
+<br><br><br><br>
+<p><h4><center>Execution of the following command :
+ <i>SELECT detail.po_number, po_date, pa_name, supplier.supplier_id, supplier_name, addr, contact, product.product_id, product_name, unit, unit_price, qty_order, qty_rec, total, status FROM ora00097.purchase_order, ora00097.product, ora00097.detail, ora00097.supplier, ora00097.pa_agent, ora00097.responsible, ora00097.pot_supplier where purchase_order.po_number = $poNumber and detail.po_number = $poNumber and detail.product_id = product.product_id and pot_supplier.product_id = product.product_id and supplier.supplier_id = product.supplier_id and supplier.supplier_id = pot_supplier.supplier_id and responsible.emp_num = pa_agent.emp_num and responsible.part_id = pot_supplier.part_id</i></h4>
+<br><h3>Enter a purchase order number (from 9501-9503)</h3>
+
+<form action="request.php" method="post">
+<input type=text name="poNumber" size=4>
+<input type="submit" value="Submit"></center>
+</form>
+</body></html>
+

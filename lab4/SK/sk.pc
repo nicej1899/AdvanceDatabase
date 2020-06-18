@@ -1,0 +1,198 @@
+/*
+*       Author:         Paul Girard Ph.D., UQAC
+*       Date:           May 2019
+*       Objective:      Program using Pro*C/C++ and gcc to show how to use 
+*                       different type of PL/SQL blocks & SQL in a C PGM
+*
+*       Step 1: Precompilation with Pro*C/C++
+* proc INAME=lab4base.pc CODE=ANSI_C SQLCHECK=semantics MODE=oracle USERID=user/password CHAR_MAP=charz
+*
+*       Step 2: Compilation with gcc    
+* gcc lab4base.c -o lab4base -include /$ORACLE_HOME/precomp/public/sqlca.h -lclntsh -B$ORACLE_HOME/lib/ -B$ORACLE_HOME/lib
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+ 
+void sql_error();
+void do_connect();
+void part_out();
+void list_po();
+int print_menu();
+
+int main()
+{ 
+        EXEC SQL WHENEVER SQLERROR do sql_error("Error at connect"); 
+        
+        do_connect();           /* connection to Oracle instance */
+
+/*      Display the program menu
+*       and execution of the transaction 
+*/
+        
+        while (1)       /* infinite loop */
+        {
+         switch (print_menu())
+         {
+          case 1: part_out();
+                  break;
+          case 2: list_po();
+                  break;
+          case 3: print_menu();
+                  break;
+                 case 4: puts("\nAu revoir Sayonara Bye bye, Ni Hao"); 
+                exit(0);
+          default: puts("\n =====> Enter a digit from the menu please ?");
+                   break;
+         }
+        }
+        
+        EXEC SQL COMMIT WORK RELEASE;           /* lib�re les verroux et d�connecte */
+                                        
+        exit(0); 
+}                       /* end of main() program */
+
+/* ******************************************************************************************
+*       Function to display the original error Oracle message 
+*  ******************************************************************************************
+*/
+
+void sql_error(char *msg)
+{
+        char ora_msg[512];                      /* buffer for Oracle error message */
+        int buf_len, msg_len;
+        
+        EXEC SQL WHENEVER SQLERROR continue;    /* Prevent an infinite loop */
+        
+        printf("\n%s\n",msg);                   /* print the local program message */
+        buf_len=sizeof(ora_msg);
+        
+        sqlglm(ora_msg,&buf_len, &msg_len);     /* read the Oracle error message */
+        printf("\n%.*s\n",msg_len, ora_msg);    /* print this message */
+        
+        EXEC SQL ROLLBACK RELEASE;              /* free locks */
+        exit(1);
+}               /*      fin de sql_error */
+
+/* ******************************************************************************************
+*       Function to do a connection to an Oracle user schema
+*  ******************************************************************************************
+*/
+
+void do_connect()
+{
+   char *uid="ora00113/CqtPZa";
+
+        EXEC SQL CONNECT :uid; 
+        printf("Connected to Oracle schema\n");
+}
+
+/* ******************************************************************************************
+*       Function to display the contents of a given part
+*  ******************************************************************************************
+*/
+
+
+void part_out()
+{
+    int part_id, qty;
+    printf("Enter part id and qty:");
+    scanf("%d%d", &part_id, &qty);
+    if(part_id <= 0)
+    {
+        printf("End of this transaction\n"); 
+        EXEC SQL COMMIT; 
+        return;
+    }
+
+    EXEC SQL EXECUTE
+    BEGIN
+        update ora00097.part set stock_qty = stock_qty - :qty
+        where part_id = :part_id;
+    END;
+    END-EXEC;
+    EXEC SQL COMMIT; 
+
+    printf("---------------\n");
+    printf("End of this transaction\n"); 
+}
+
+void list_po()
+{
+    int po_number;
+    int supplier_id, product_id, prod_unit, unit_price, qty_order, qty_rec, total;
+    char po_date[9], pa_name[16], address[21], contact[16], prod_name[16], status[16],supplier_name[21];
+    printf("Enter a purchase order number:");
+    scanf("%d", &po_number);
+    if(po_number <= 0)
+    {
+        printf("End of this transaction\n");
+        EXEC SQL COMMIT; 
+        return;
+    }
+    
+    EXEC SQL declare c1 cursor for 
+        select detail.po_number, po_date, pa_name, supplier.supplier_id, supplier_name, addr, contact, product.product_id, product_name, unit, unit_price, qty_order, qty_rec, total, status 
+        from ora00097.purchase_order, ora00097.product, ora00097.detail, ora00097.supplier, ora00097.pa_agent, ora00097.responsible, ora00097.pot_supplier
+        where purchase_order.po_number = :po_number
+            and detail.po_number = :po_number
+            and detail.product_id = product.product_id
+            and pot_supplier.product_id = product.product_id
+            and supplier.supplier_id = product.supplier_id
+            and supplier.supplier_id = pot_supplier.supplier_id
+            and responsible.emp_num = pa_agent.emp_num
+            and responsible.part_id = pot_supplier.part_id;
+
+    EXEC SQL open c1;
+    EXEC SQL WHENEVER NOT FOUND do break;
+    
+    int none = 1;
+    for(;;)
+    {
+        EXEC SQL fetch c1 INTO :po_number, :po_date, :pa_name, :supplier_id, :supplier_name, :address, :contact, :product_id, :prod_name, :prod_unit, :unit_price, :qty_order, :qty_rec, :total, :status;
+        none = 0;
+        printf("-------------------------\n");
+        printf("po_number   : %d\n",po_number);
+        printf("supplier_id : %d\n",supplier_id);
+        printf("product_id  : %d\n",product_id);
+        printf("prod_unit   : %d\n",prod_unit);
+        printf("unit_price  : %d\n",unit_price);
+        printf("qty_order   : %d\n",qty_order);
+        printf("qty_rec     : %d\n",qty_rec);
+        printf("total       : %d\n",total);
+        printf("po_date     : %s\n",po_date);
+        printf("pa_name     : %s\n",pa_name);
+        printf("address     : %s\n",address);
+        printf("contact     : %s\n",contact);
+        printf("prod_name   : %s\n",prod_name);
+        printf("status      : %s\n",status);
+    }
+    if(none)
+    {
+        printf("Record not found \n");  
+    }else
+    {
+        printf("End of this transaction\n"); 
+    }
+    EXEC SQL COMMIT; 
+}
+
+
+/* ************************************************************
+*       Function print the menu and choose the transaction
+*  ************************************************************
+*/
+
+int print_menu()
+{
+   int choice;                          /* id of menu */
+        printf("\n\t Choose a transaction by entering a number \n");
+        printf("\t *****************************************\n");
+        printf("\t (1) PART_OUT\n");
+        printf("\t (2) LIST_PO\n");
+        printf("\t (3) DISPLAY MENU\n");
+        printf("\t (4) QUIT\n");
+        printf("Enter your choice ? "); 
+        scanf("%d",&choice);            /* read the choice */
+        return choice;
+}

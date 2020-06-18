@@ -1,0 +1,159 @@
+/*
+*       Author:         Paul Girard Ph.D., UQAC
+*       Date:           May 2019
+*       Objective:      Program using Pro*C/C++ and gcc to show how to use 
+*                       different type of PL/SQL blocks & SQL in a C PGM
+*
+*       Step 1: Precompilation with Pro*C/C++
+* proc INAME=lab4base.pc CODE=ANSI_C SQLCHECK=semantics MODE=oracle USERID=user/password CHAR_MAP=charz
+*
+*       Step 2: Compilation with gcc    
+* gcc lab4base.c -o lab4base -include /$ORACLE_HOME/precomp/public/sqlca.h -lclntsh -B$ORACLE_HOME/lib/ -B$ORACLE_HOME/lib
+*/
+
+#include <stdio.h>
+#include <stdlib.h>
+ 
+void sql_error();
+void do_connect();
+void invent();
+void value();
+int print_menu();
+
+int main()
+{ 
+        EXEC SQL WHENEVER SQLERROR do sql_error("Error at connect"); 
+        
+        do_connect();           /* connection to Oracle instance */
+
+/*      Display the program menu
+*       and execution of the transaction 
+*/
+        
+        while (1)       /* infinite loop */
+        {
+         switch (print_menu())
+         {
+          case 1: invent();
+                  break;
+          case 2: value();
+                  break;
+          case 3: print_menu();
+                  break;
+                 case 4: puts("\nAu revoir Sayonara Bye bye, Ni Hao"); 
+                exit(0);
+          default: puts("\n =====> Enter a digit from the menu please ?");
+                   break;
+         }
+        }
+        
+        EXEC SQL COMMIT WORK RELEASE;           /* lib�re les verroux et d�connecte */
+                                        
+        exit(0); 
+}                       /* end of main() program */
+
+/* ******************************************************************************************
+*       Function to display the original error Oracle message 
+*  ******************************************************************************************
+*/
+
+void sql_error(char *msg)
+{
+        char ora_msg[512];                      /* buffer for Oracle error message */
+        int buf_len, msg_len;
+        
+        EXEC SQL WHENEVER SQLERROR continue;    /* Prevent an infinite loop */
+        
+        printf("\n%s\n",msg);                   /* print the local program message */
+        buf_len=sizeof(ora_msg);
+        
+        sqlglm(ora_msg,&buf_len, &msg_len);     /* read the Oracle error message */
+        printf("\n%.*s\n",msg_len, ora_msg);    /* print this message */
+        
+        EXEC SQL ROLLBACK RELEASE;              /* free locks */
+        exit(1);
+}               /*      fin de sql_error */
+
+/* ******************************************************************************************
+*       Function to do a connection to an Oracle user schema
+*  ******************************************************************************************
+*/
+
+void do_connect()
+{
+   char *uid="ora00097/5vqGzP";
+
+        EXEC SQL CONNECT :uid; 
+        printf("Connected to Oracle schema\n");
+}
+
+/* ******************************************************************************************
+*       Function to display the contents of a given part
+*  ******************************************************************************************
+*/
+
+
+void value()
+{
+    int sum;
+
+    EXEC SQL EXECUTE
+    BEGIN
+        select sum(unit_price * stock_qty) INTO :sum
+        from part_sks;
+    END;
+    END-EXEC;
+
+    printf(" total value  \n");
+    printf("--------------\n");
+    printf(" %12d \n", sum);
+    printf("\n");
+    printf("End of this transaction\n"); 
+}
+
+void invent()
+{
+    int id, number, none;
+    
+    EXEC SQL declare c1 cursor for
+        select part_id, stock_qty from part_sks;
+    
+    EXEC SQL open c1;
+    EXEC SQL WHENEVER NOT FOUND do break;
+
+    printf(" id   number   \n");
+    printf("---------------\n");
+    none = 1;
+    for(;;)
+    {
+        EXEC SQL fetch c1 into :id, :number;
+        none = 0;
+        printf(" %4d %8d \n", id, number);
+    }
+    if(none)
+    {
+        printf("\n");
+    }
+    printf("End of this transaction\n");
+    EXEC SQL close c1;                      
+    EXEC SQL COMMIT; 
+}
+
+/* ************************************************************
+*       Function print the menu and choose the transaction
+*  ************************************************************
+*/
+
+int print_menu()
+{
+   int choice;                          /* id of menu */
+        printf("\n\t Choose a transaction by entering a number \n");
+        printf("\t *****************************************\n");
+        printf("\t (1) INVENT\n");
+        printf("\t (2) VALUE\n");
+        printf("\t (3) DISPLAY MENU\n");
+        printf("\t (4) QUIT\n");
+        printf("Enter your choice ? "); 
+        scanf("%d",&choice);            /* read the choice */
+        return choice;
+}
